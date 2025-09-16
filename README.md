@@ -41,9 +41,9 @@ curl http://localhost:8081/actuator/health
 
 ### Obtener Token para Web
 ```bash
-curl -X POST http://localhost:8084/auth/token \
+curl -X POST http://localhost:8081/auth/token \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"user":"admin","channel":"web"}'
 ```
 
 ### Usar Token en Requests
@@ -56,8 +56,11 @@ curl -H "Authorization: Bearer <TOKEN>" \
 
 ### 👤 **Información de Cuenta Completa**
 ```bash
+# Lista completa de cuentas
+GET /web/accounts
+
 # Datos completos de una cuenta específica
-GET /web/accounts/{accountId}
+GET /web/accounts/{accountNumber}
 
 # Ejemplo de respuesta completa:
 {
@@ -65,7 +68,6 @@ GET /web/accounts/{accountId}
   "ownerName": "Diana Prince",
   "balance": 15000.00,
   "currency": "USD",
-  "balanceAsDouble": 15000.0,
   "accountType": "CHECKING",
   "status": "ACTIVE",
   "createdDate": "2023-01-15",
@@ -73,57 +75,22 @@ GET /web/accounts/{accountId}
 }
 ```
 
-### 📋 **Lista de Cuentas Web**
-```bash
-# Lista completa de todas las cuentas
-GET /web/accounts
-
-# Con paginación
-GET /web/accounts?page=0&size=10&sort=balance,desc
-```
-
-### 💳 **Historial de Transacciones**
-```bash
-# Historial completo de transacciones
-GET /web/accounts/{accountId}/transactions
-
-# Con filtros
-GET /web/accounts/{accountId}/transactions?startDate=2024-01-01&endDate=2024-09-15&type=DEPOSIT
-```
-
-### 📈 **Resumen de Cuenta**
-```bash
-# Resumen detallado con estadísticas
-GET /web/accounts/{accountId}/summary
-
-# Incluye:
-# - Balance actual
-# - Total depósitos del mes
-# - Total retiros del mes
-# - Número de transacciones
-# - Tendencia de balance
-```
-
 ## 🧪 **Ejemplos de Uso**
 
 ### 1. Dashboard de Cuenta Web
 ```bash
 # Obtener datos para dashboard completo
-TOKEN=$(curl -s -X POST http://localhost:8084/auth/token \
+TOKEN=$(curl -s -X POST http://localhost:8081/auth/token \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' | jq -r '.token')
+  -d '{"user":"admin","channel":"web"}' | jq -r '.token')
 
-# Datos de cuenta
+# Lista de cuentas para selección
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8081/web/accounts
+
+# Detalles de cuenta seleccionada
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8081/web/accounts/124
-
-# Historial de transacciones
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/web/accounts/124/transactions
-
-# Resumen estadístico
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/web/accounts/124/summary
 ```
 
 ### 2. Verificación End-to-End
@@ -132,26 +99,21 @@ curl -H "Authorization: Bearer $TOKEN" \
 echo "=== VERIFICACIÓN WEB BFF ==="
 
 # 1. Obtener token
-TOKEN=$(curl -s -X POST http://localhost:8084/auth/token \
+TOKEN=$(curl -s -X POST http://localhost:8081/auth/token \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' | jq -r '.token')
+  -d '{"user":"admin","channel":"web"}' | jq -r '.token')
 
 echo "Token obtenido: ${TOKEN:0:50}..."
 
-# 2. Verificar datos completos
-echo "Datos de cuenta 124:"
-curl -s -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/web/accounts/124 | jq '.'
-
-# 3. Verificar lista de cuentas
+# 2. Verificar lista de cuentas
 echo "Lista de cuentas:"
 curl -s -H "Authorization: Bearer $TOKEN" \
   http://localhost:8081/web/accounts | jq '.[0]'
 
-# 4. Verificar transacciones
-echo "Transacciones de cuenta 124:"
+# 3. Verificar datos de cuenta específica
+echo "Datos de cuenta 124:"
 curl -s -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/web/accounts/124/transactions | jq '.[0]'
+  http://localhost:8081/web/accounts/124 | jq '.'
 ```
 
 ## 🏗️ **Arquitectura Técnica**
@@ -222,9 +184,9 @@ curl http://localhost:8081/actuator/info
 ### Error Común: Token Expirado
 ```bash
 # Si obtienes 401 Unauthorized, renueva el token
-curl -X POST http://localhost:8084/auth/token \
+curl -X POST http://localhost:8081/auth/token \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"user":"admin","channel":"web"}'
 ```
 
 ### Error: Backend_03 No Disponible
